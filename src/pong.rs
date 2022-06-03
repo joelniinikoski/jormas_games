@@ -1,0 +1,161 @@
+use crate::*;
+use ::rand::Rng;
+
+const PADDLE_SIZE: (f32, f32) = (20.0,100.0);
+const PADDLE_SPEED: f32 = 10.;
+
+const BALL_SIZE: f32 = 10.0;
+const BALL_SPEED: f32 = 8.;
+
+#[derive(Clone)]
+pub struct State {
+    paddles: (Paddle, Paddle),
+    ball: Ball,
+    timer: f32,
+}
+#[derive(Clone)]
+struct Paddle {
+    pos: Vec2,
+    side: u8,
+    size: Vec2,
+}
+
+impl Paddle {
+    fn new_paddles() -> (Paddle, Paddle) {
+        (
+            Paddle {
+                pos: Vec2::from((20.0, screen_height()/2.)),
+                side: 1,
+                size: Vec2::from(PADDLE_SIZE),
+
+            },
+            Paddle {
+                pos: Vec2::from((screen_width()-20.0, screen_height()/2.)),
+                side: 2,
+                size: Vec2::from(PADDLE_SIZE),
+            }
+        )
+    }
+    fn move_y(&mut self) {
+        match self.side {
+            1 => {
+                if is_key_down(KeyCode::W) && self.pos.y > self.size.y/2. {
+                    self.pos.y -= PADDLE_SPEED;
+                } 
+                if is_key_down(KeyCode::S) && self.pos.y < screen_height()-self.size.y/2.{
+                    self.pos.y += PADDLE_SPEED;
+                }
+            },
+            2 => {
+                if is_key_down(KeyCode::Up) && self.pos.y > self.size.y/2.{
+                    self.pos.y -= PADDLE_SPEED;
+                }
+                if is_key_down(KeyCode::Down) && self.pos.y < screen_height()-self.size.y/2.{
+                    self.pos.y += PADDLE_SPEED;
+                }
+            },
+            _ => (),
+        }
+    } 
+}
+#[derive(Clone)]
+struct Ball {
+    pos: Vec2,
+    size: f32,
+    ismoving: bool,
+    direction: Vec2,
+    score: (usize,usize),
+}
+
+impl Ball {
+    fn play(&mut self) {
+        match self.ismoving {
+            true => {
+                if self.pos.y > screen_height() || self.pos.y < 0. {
+                    self.direction.y = -self.direction.y;
+                }
+                if self.pos.x > screen_width()  {
+                    self.ismoving=false;
+                    self.score.0 += 1;
+                } else if self.pos.x < 0.{
+                    self.ismoving=false;
+                    self.score.1 +=1;
+                }
+                self.direction = self.direction.clamp(vec2(-0.72,-0.72), vec2(0.72,0.72));
+                self.pos += self.direction * BALL_SPEED;
+            },
+            false => {
+                let mut rng = ::rand::thread_rng();
+                self.pos = (screen_width()/2., screen_height()/2.).into();
+                self.ismoving = true;
+                self.direction = vec2(rng.gen_range(-5.0..5.0), rng.gen_range(-1.0..1.0)).normalize()
+            }
+        }
+    }
+}
+
+fn paddle_interaction_with_ball(state: &mut State) -> f32 {
+    let ball = &mut state.ball;
+    let p1pos: &Vec2 = &(state.paddles.0.pos.x+BALL_SIZE-PADDLE_SIZE.0/2.,state.paddles.0.pos.y-PADDLE_SIZE.0/2.).into();
+    let p2pos: &Vec2 = &(state.paddles.1.pos.x+BALL_SIZE-PADDLE_SIZE.0/2.,state.paddles.1.pos.y-PADDLE_SIZE.0/2.).into();
+
+    let mut timer = 0.0;
+    if (ball.pos.x-p1pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p1pos.y).abs() < PADDLE_SIZE.1/2. ||
+    (ball.pos.x-p2pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p2pos.y).abs() < PADDLE_SIZE.1/2. {
+        
+        ball.direction.x = -ball.direction.x;
+        timer = 0.1;
+
+        if ball.pos.x < screen_width()/2. {
+            //player 1 collision
+            ball.direction.y = -(ball.pos-*p1pos).angle_between(Vec2::X);
+        } else {
+            //player 2 collision
+            ball.direction.y = (ball.pos-*p2pos).angle_between(-Vec2::X);
+        }
+    }
+
+    ball.direction = ball.direction.normalize();
+    timer
+
+}
+
+pub fn setup() -> State {
+    let (player1, player2) = Paddle::new_paddles();
+    let ball = Ball {pos: (screen_width()/2.,screen_height()/2.).into(), size: BALL_SIZE, ismoving: false, direction: (0.,0.).into(), score: (0,0)};
+    State {paddles: (player1, player2), ball: ball, timer: 0.}
+}
+
+pub fn run(state: &mut State) {
+    let _delta = get_frame_time();
+    if state.timer > 0. {
+        state.timer -= _delta;
+    }
+    {
+        let (player1, player2) = &mut state.paddles;
+
+        player1.move_y();
+        player2.move_y();
+
+        draw_rectangle(player1.pos.x-player1.size.x/2., player1.pos.y-player1.size.y/2., player1.size.x, player1.size.y, WHITE);
+        draw_rectangle(player2.pos.x-player2.size.x/2., player2.pos.y-player2.size.y/2., player2.size.x, player2.size.y, WHITE);
+    }
+
+    {
+        let text = format!("{}       {}", state.ball.score.0, state.ball.score.1);
+        draw_text_centered(&text, screen_width()/2., 50., Option::None, 40., WHITE);
+    }
+    
+    {
+        let ball = &mut state.ball;
+        ball.play();
+        draw_circle(ball.pos.x, ball.pos.y, ball.size, WHITE);
+    }
+
+    if state.timer <= 0.
+    {
+        state.timer = paddle_interaction_with_ball(state);
+    }
+
+    
+}
