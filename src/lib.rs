@@ -6,4 +6,6 @@ pub fn draw_text_centered(text: &str, x: f32, y:f32, font: Option<Font>, font_si
     draw_text(text, x-dimensions.width/2., y-dimensions.height/2., font_size, color);
 }
 
-pub mod pong;
+pub mod pong_mod;
+
+pub mod game_of_life_mod;

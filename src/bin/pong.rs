@@ -2,7 +2,7 @@ use macroquad_jorma::*;
 
 fn conf() -> Conf {
     Conf {
-        window_title: String::from("Jorman Peli"),
+        window_title: String::from("Pong"),
         window_width: 1260,
         window_height: 768,
         window_resizable: false,
@@ -12,9 +12,9 @@ fn conf() -> Conf {
 
 #[macroquad::main(conf)]
 async fn main() {
-    let mut state = pong::setup();
+    let mut state = pong_mod::setup();
     loop {
-        pong::run(&mut state);
+        pong_mod::run(&mut state);
         next_frame().await
     }
 }
