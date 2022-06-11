@@ -3,7 +3,9 @@ use game_of_life_mod::*;
 use std::io::stdin;
 use ::rand::Rng;
 
-const WAIT_BETWEEN_FRAMES: f32 = 0.05;
+const WAIT_BETWEEN_FRAMES: f32 = 0.08;
+const CAMERA_SPEED: f32 = 0.07;
+const ZOOM: f32 = 0.05;
 
 fn conf() -> Conf {
     Conf {
@@ -22,7 +24,7 @@ async fn main() {
     let mut area = String::new();
     let mut prob = String::new();
 
-    println!("Input integer value between 1 and 19 for block size:");
+    println!("Input integer value between 1 and 99 for block size:");
     stdin().read_line(&mut area).unwrap();
     let x = area.trim().parse::<usize>().expect("Please input a valid integer value");
 
@@ -31,23 +33,47 @@ async fn main() {
     let y = prob.trim().parse::<f32>().expect("Please input a valid floating point probability");
 
     let mut vec = vec![];
-    if x > 0 && x < 20 && y > 0. && y <= 1. {
+    if x > 0 && x < 100 && y > 0. && y <= 1. {
         for i in 0..x {
             for j in 0..x {
                 let mut rng = ::rand::thread_rng();
-                if rng.gen_range(0_f32..1_f32) < y {
-                    vec.push(vec2(screen_width()/2.-(x as f32)*SQUARE_SIZE/2. + (i as f32) * SQUARE_SIZE,screen_height()/2.-(y as f32)*SQUARE_SIZE/2. + (j as f32) * SQUARE_SIZE));
+                if rng.gen_range(0_f32..1_f32) <= y {
+                    vec.push(vec2(screen_width()/2. + (i as f32) * SQUARE_SIZE,screen_height()/2. + (j as f32) * SQUARE_SIZE));
                 }
             }
         }
     } else {panic!()}
 
-
     //instantiate state with user parameters
-    let mut state = State { alive: vec };
+    let mut state = State { alive: vec};
     let mut timer = 0.0;
 
+    let mut cam = Camera2D::from_display_rect(Rect::new(0.0,0.0,screen_width(),screen_height()));
+    let mut offset = cam.offset;
+
     loop {
+        //Camera movement and zoom
+        if macroquad::input::is_key_down(KeyCode::Up) {
+            offset += CAMERA_SPEED * -Vec2::Y;  
+        }
+        if macroquad::input::is_key_down(KeyCode::Down) {
+            offset += CAMERA_SPEED * Vec2::Y;  
+        }
+        if macroquad::input::is_key_down(KeyCode::Right) {
+            offset += CAMERA_SPEED * -Vec2::X;  
+        }
+        if macroquad::input::is_key_down(KeyCode::Left) {
+            offset += CAMERA_SPEED * Vec2::X;  
+        }
+        if macroquad::input::is_key_down(KeyCode::R) {
+            cam.zoom += cam.zoom * ZOOM;
+        } else if macroquad::input::is_key_down(KeyCode::F) {
+            cam.zoom += cam.zoom * -ZOOM;
+        }
+        cam.target = vec2(screen_width()/2. - offset.x * screen_width(), screen_height()/2. + offset.y * screen_height());
+
+        set_camera(&cam);
+
         let delta = get_frame_time();
         if timer > 0.0 {
             timer -= delta;
@@ -59,6 +85,10 @@ async fn main() {
             state.propagate();
             timer = WAIT_BETWEEN_FRAMES;
         }
+        
+        //Draw coordinate text
+        set_default_camera();
+        draw_text(&format!("x:{:.2}, y:{:.2}",&offset.x * -1., &offset.y * -1.), 20., 20., 20., GREEN);
 
         next_frame().await;
     }
