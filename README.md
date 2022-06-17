@@ -1,5 +1,5 @@
-# macroquad_jorma
-Games and applications made with the macroquad rust-library.
+# Jorma's Games
+Games and applications made with Rust.
 
 ## Current apps:
 - Pong
