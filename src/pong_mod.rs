@@ -1,5 +1,5 @@
 use crate::*;
-use ::rand::Rng;
+use ::rand::prelude::SliceRandom;
 
 const PADDLE_SIZE: (f32, f32) = (20.0,100.0);
 const PADDLE_SPEED: f32 = 10.;
@@ -81,14 +81,13 @@ impl Ball {
                     self.ismoving=false;
                     self.score.1 +=1;
                 }
-                self.direction = self.direction.clamp(vec2(-0.72,-0.72), vec2(0.72,0.72));
                 self.pos += self.direction * BALL_SPEED;
             },
             false => {
                 let mut rng = ::rand::thread_rng();
                 self.pos = (screen_width()/2., screen_height()/2.).into();
-                self.ismoving = true;
-                self.direction = vec2(rng.gen_range(-5.0..5.0), rng.gen_range(-1.0..1.0)).normalize()
+                self.ismoving = true; 
+                self.direction = *[vec2(1.0,1.0), vec2(-1.0,1.0), vec2(1.0,-1.0),  vec2(-1.0,-1.0)].choose(&mut rng).unwrap();
             }
         }
     }
@@ -108,14 +107,19 @@ fn paddle_interaction_with_ball(state: &mut State) -> f32 {
 
         if ball.pos.x < screen_width()/2. {
             //player 1 collision
-            ball.direction.y = -(ball.pos-*p1pos).angle_between(Vec2::X);
+            ball.direction.y = match ball.pos.y-p1pos.y > 0.0 {
+                true => 1.0,
+                false => -1.0,
+            };
         } else {
             //player 2 collision
-            ball.direction.y = (ball.pos-*p2pos).angle_between(-Vec2::X);
+            match ball.pos.y-p2pos.y > 0.0 {
+                true => 1.0,
+                false => -1.0,
+            };
         }
     }
 
-    ball.direction = ball.direction.normalize();
     timer
 
 }
