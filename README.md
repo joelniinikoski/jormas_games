@@ -1,4 +1,4 @@
-# macroquad_jorma
+# jormas_games
 Games and applications made with the macroquad rust-library.
 
 ## Current apps:
