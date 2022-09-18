@@ -1,7 +1,7 @@
 use crate::*;
 use ::rand::prelude::SliceRandom;
 
-const PADDLE_SIZE: (f32, f32) = (20.0,100.0);
+const PADDLE_SIZE: (f32, f32) = (20.0,120.0);
 const PADDLE_SPEED: f32 = 10.;
 
 const BALL_SIZE: f32 = 10.0;
@@ -11,7 +11,6 @@ const BALL_SPEED: f32 = 7.;
 pub struct State {
     paddles: (Paddle, Paddle),
     ball: Ball,
-    timer: f32,
 }
 #[derive(Clone)]
 struct Paddle {
@@ -114,15 +113,13 @@ impl Ball {
     }
 }
 
-fn paddle_interaction_with_ball(state: &mut State) -> f32 {
+fn paddle_interaction_with_ball(state: &mut State) {
     let ball = &mut state.ball;
     let p1pos: &Vec2 = &(state.paddles.0.pos.x+BALL_SIZE-PADDLE_SIZE.0/2.,state.paddles.0.pos.y-PADDLE_SIZE.0/2.).into();
     let p2pos: &Vec2 = &(state.paddles.1.pos.x+BALL_SIZE-PADDLE_SIZE.0/2.,state.paddles.1.pos.y-PADDLE_SIZE.0/2.).into();
 
-    let mut timer = 0.0;
     if ball.direction.x == -1.0 && (ball.pos.x-p1pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p1pos.y).abs() < PADDLE_SIZE.1/2. {
         ball.direction.x = -ball.direction.x;
-        timer = 0.1;
 
         ball.direction.y = match ball.pos.y-p1pos.y > 0.0 {
             true => 1.0,
@@ -132,29 +129,22 @@ fn paddle_interaction_with_ball(state: &mut State) -> f32 {
     else if ball.direction.x == 1.0 && (ball.pos.x-p2pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p2pos.y).abs() < PADDLE_SIZE.1/2. {
         
         ball.direction.x = -ball.direction.x;
-        timer = 0.1;
 
         match ball.pos.y-p2pos.y > 0.0 {
             true => 1.0,
             false => -1.0,
         };
     }
-
-    timer
-
 }
 
 pub fn setup() -> State {
     let (player1, player2) = Paddle::new_paddles();
     let ball = Ball {pos: (screen_width()/2.,screen_height()/2.).into(), size: BALL_SIZE, ismoving: false, direction: (0.,0.).into(), score: (0,0)};
-    State {paddles: (player1, player2), ball: ball, timer: 0.}
+    State {paddles: (player1, player2), ball: ball}
 }
 
 pub fn run(state: &mut State) {
     let _delta = get_frame_time();
-    if state.timer > 0. {
-        state.timer -= _delta;
-    }
     {
         if is_key_pressed(KeyCode::R) {
             state.ball.score = (0,0);
@@ -183,10 +173,6 @@ pub fn run(state: &mut State) {
         draw_circle(ball.pos.x, ball.pos.y, ball.size, WHITE);
     }
 
-    if state.timer <= 0.
-    {
-        state.timer = paddle_interaction_with_ball(state);
-    }
-
+    paddle_interaction_with_ball(state);
     
 }
