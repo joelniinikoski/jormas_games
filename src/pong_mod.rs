@@ -5,7 +5,7 @@ const PADDLE_SIZE: (f32, f32) = (20.0,100.0);
 const PADDLE_SPEED: f32 = 10.;
 
 const BALL_SIZE: f32 = 10.0;
-const BALL_SPEED: f32 = 8.;
+const BALL_SPEED: f32 = 7.;
 
 #[derive(Clone)]
 pub struct State {
@@ -56,7 +56,28 @@ impl Paddle {
             },
             _ => (),
         }
-    } 
+    }
+    fn move_x(&mut self) {
+        match self.side {
+            1 => {
+                if is_key_down(KeyCode::A) && self.pos.x > self.size.x/2. {
+                    self.pos.x -= PADDLE_SPEED;
+                } 
+                if is_key_down(KeyCode::D) && self.pos.x < screen_width()-self.size.x/2.{
+                    self.pos.x += PADDLE_SPEED;
+                }
+            },
+            2 => {
+                if is_key_down(KeyCode::Left) && self.pos.x > self.size.x/2.{
+                    self.pos.x -= PADDLE_SPEED;
+                }
+                if is_key_down(KeyCode::Right) && self.pos.x < screen_width()-self.size.x/2.{
+                    self.pos.x += PADDLE_SPEED;
+                }
+            },
+            _ => (),
+        }
+    }
 }
 #[derive(Clone)]
 struct Ball {
@@ -99,25 +120,24 @@ fn paddle_interaction_with_ball(state: &mut State) -> f32 {
     let p2pos: &Vec2 = &(state.paddles.1.pos.x+BALL_SIZE-PADDLE_SIZE.0/2.,state.paddles.1.pos.y-PADDLE_SIZE.0/2.).into();
 
     let mut timer = 0.0;
-    if (ball.pos.x-p1pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p1pos.y).abs() < PADDLE_SIZE.1/2. ||
-    (ball.pos.x-p2pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p2pos.y).abs() < PADDLE_SIZE.1/2. {
+    if ball.direction.x == -1.0 && (ball.pos.x-p1pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p1pos.y).abs() < PADDLE_SIZE.1/2. {
+        ball.direction.x = -ball.direction.x;
+        timer = 0.1;
+
+        ball.direction.y = match ball.pos.y-p1pos.y > 0.0 {
+            true => 1.0,
+            false => -1.0,
+        };
+    }
+    else if ball.direction.x == 1.0 && (ball.pos.x-p2pos.x).abs() < PADDLE_SIZE.0/2. && (ball.pos.y-p2pos.y).abs() < PADDLE_SIZE.1/2. {
         
         ball.direction.x = -ball.direction.x;
         timer = 0.1;
 
-        if ball.pos.x < screen_width()/2. {
-            //player 1 collision
-            ball.direction.y = match ball.pos.y-p1pos.y > 0.0 {
-                true => 1.0,
-                false => -1.0,
-            };
-        } else {
-            //player 2 collision
-            match ball.pos.y-p2pos.y > 0.0 {
-                true => 1.0,
-                false => -1.0,
-            };
-        }
+        match ball.pos.y-p2pos.y > 0.0 {
+            true => 1.0,
+            false => -1.0,
+        };
     }
 
     timer
@@ -136,13 +156,20 @@ pub fn run(state: &mut State) {
         state.timer -= _delta;
     }
     {
+        if is_key_pressed(KeyCode::R) {
+            state.ball.score = (0,0);
+        }
+    }
+    {
         let (player1, player2) = &mut state.paddles;
 
         player1.move_y();
         player2.move_y();
+        player1.move_x();
+        player2.move_x();
 
-        draw_rectangle(player1.pos.x-player1.size.x/2., player1.pos.y-player1.size.y/2., player1.size.x, player1.size.y, WHITE);
-        draw_rectangle(player2.pos.x-player2.size.x/2., player2.pos.y-player2.size.y/2., player2.size.x, player2.size.y, WHITE);
+        draw_rectangle(player1.pos.x-player1.size.x/2., player1.pos.y-player1.size.y/2., player1.size.x, player1.size.y, GREEN);
+        draw_rectangle(player2.pos.x-player2.size.x/2., player2.pos.y-player2.size.y/2., player2.size.x, player2.size.y, RED);
     }
 
     {

@@ -41,6 +41,9 @@ impl State {
                 if self.alive.contains(&(square+*dir)) {
                     neighbors += 1;
                 }
+                if neighbors >= 4 {
+                    break
+                }
             }
 
             if neighbors == 3 || neighbors == 2 && self.alive.contains(&square) {

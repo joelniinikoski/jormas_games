@@ -3,8 +3,7 @@ use macroquad_jorma::*;
 fn conf() -> Conf {
     Conf {
         window_title: String::from("Pong"),
-        window_width: 1260,
-        window_height: 768,
+        fullscreen: true,
         window_resizable: false,
         ..Default::default()
     }
